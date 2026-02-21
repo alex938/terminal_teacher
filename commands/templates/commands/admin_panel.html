@@ -161,14 +161,38 @@
         }
 
         async function clearSession() {
-            if (!confirm('Clear ALL commands from this session? This cannot be undone!')) return;
+            const choice = confirm('Clear ALL commands from this session?\n\nClick OK to clear current session\nClick Cancel for database reset options');
+            
+            if (choice === false) {
+                // User clicked Cancel - ask if they want to nuke everything
+                if (!confirm('⚠️ DELETE ENTIRE DATABASE?\n\nThis will:\n- Delete ALL sessions\n- Delete ALL commands\n- Reset all IDs to 1\n\nThis CANNOT be undone!')) {
+                    return;
+                }
+                
+                try {
+                    const response = await fetch('/api/database/nuke/', {
+                        method: 'POST',
+                        headers: { 'X-CSRFToken': csrfToken }
+                    });
+                    
+                    if (response.ok) {
+                        alert('Database cleared! All IDs reset.');
+                        location.reload();
+                    } else {
+                        alert('Failed to clear database');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('Error clearing database');
+                }
+                return;
+            }
 
+            // Clear current session (user clicked OK)
             try {
                 const response = await fetch('/api/session/clear/', {
                     method: 'POST',
-                    headers: {
-                        'X-CSRFToken': csrfToken,
-                    }
+                    headers: { 'X-CSRFToken': csrfToken }
                 });
 
                 if (response.ok) {
@@ -181,7 +205,6 @@
                 alert('Error clearing session');
             }
         }
-
         function showNewSessionModal() {
             const title = prompt('Enter new session title (or leave empty for auto-generated):');
             if (title === null) return;

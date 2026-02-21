@@ -21,5 +21,5 @@ urlpatterns = [
     path('api/session/clear/', views.api_clear_session, name='api_clear_session'),
     path('api/session/new/', views.api_new_session, name='api_new_session'),
     path('api/commands/manual/', views.api_add_manual_command, name='api_add_manual_command'),
-]
     path('api/database/nuke/', views.api_nuke_database, name='api_nuke_database'),
+]

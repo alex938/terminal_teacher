@@ -29,10 +29,6 @@ __terminal_teacher_capture() {
     # Skip the capture function itself
     [[ \"\$cmd\" == *\"__terminal_teacher_capture\"* ]] && return
     
-    # Skip certain commands
-    case \"\$cmd\" in
-        clear|exit|logout|history|cd|ls|pwd) return ;;
-    esac
     
     # Send to server in background subshell (no job control)
     (
