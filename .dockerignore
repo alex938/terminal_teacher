@@ -1,0 +1,82 @@
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual Environment
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+
+# Django
+*.log
+db.sqlite3
+db.sqlite3-journal
+/data/*.sqlite3
+/data/*.db
+
+# Environment
+.env
+.env.local
+.env.*.local
+.env.example
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Documentation (not needed in container)
+README.md
+QUICKSTART.md
+CLEANUP_GUIDE.md
+FIX_APPLIED.md
+agents.md
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+tests/
+*.test.py
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Backups
+*.backup
+*.backup.*
+.bashrc.backup.*
+
+# Scripts not needed in container
+setup_terminal_capture.sh
+remove_terminal_capture.sh
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Misc
+*.md
+!requirements.txt
+LICENSE

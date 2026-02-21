@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terminal Teacher - Live Commands</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <h1>📺 Terminal Teacher</h1>
+            <div class="session-info">
+                <strong>Session:</strong> <span id="session-title">{{ session.title }}</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <div id="command-list" class="command-list">
+            {% if commands %}
+                {% for command in commands %}
+                <div class="command-card" data-command-id="{{ command.id }}">
+                    <div class="command-text">{{ command.command_text|escape }}</div>
+                    <div class="command-time">{{ command.created_at|date:"Y-m-d H:i:s" }}</div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <p>Waiting for commands...</p>
+                    <p style="font-size: 0.9rem;">Commands will appear here as your teacher types them.</p>
+                </div>
+            {% endif %}
+        </div>
+    </main>
+
+    <script>
+        // Auto-polling for new commands
+        let lastCommandId = {{ commands.last.id|default:0 }};
+        let currentSessionId = {{ session.id }};
+        let isPolling = false;
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function formatDateTime(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleString('en-US', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            }).replace(',', '');
+        }
+
+        async function pollCommands() {
+            if (isPolling) return;
+            isPolling = true;
+
+            try {
+                const response = await fetch(`/api/commands/?since=${lastCommandId}`);
+                const data = await response.json();
+
+                // Check if session changed (cleared or new session)
+                if (data.session_id !== currentSessionId) {
+                    console.log('Session changed, reloading page...');
+                    window.location.reload();
+                    return;
+                }
+
+                // Check for deletions - get current command IDs on page
+                const currentCommandCards = document.querySelectorAll('.command-card');
+                const currentCommandIds = Array.from(currentCommandCards).map(card => 
+                    parseInt(card.getAttribute('data-command-id'))
+                );
+                
+                // If we have commands on page, check if any were deleted
+                if (currentCommandIds.length > 0 && data.all_command_ids) {
+                    const serverCommandIds = data.all_command_ids;
+                    const deletedIds = currentCommandIds.filter(id => !serverCommandIds.includes(id));
+                    
+                    // Remove deleted commands from DOM
+                    deletedIds.forEach(id => {
+                        const card = document.querySelector(`[data-command-id="${id}"]`);
+                        if (card) {
+                            card.style.opacity = '0';
+                            setTimeout(() => card.remove(), 300);
+                        }
+                    });
+                }
+
+                // Check if session was cleared (no commands on server)
+                if (data.all_command_ids && data.all_command_ids.length === 0 && currentCommandIds.length > 0) {
+                    console.log('Session cleared, reloading page...');
+                    window.location.reload();
+                    return;
+                }
+
+                // Add new commands
+                if (data.commands && data.commands.length > 0) {
+                    const commandList = document.getElementById('command-list');
+                    const emptyState = commandList.querySelector('.empty-state');
+                    
+                    if (emptyState) {
+                        emptyState.remove();
+                    }
+
+                    data.commands.forEach(command => {
+                        const card = document.createElement('div');
+                        card.className = 'command-card';
+                        card.setAttribute('data-command-id', command.id);
+                        card.style.opacity = '0';
+                        card.innerHTML = `
+                            <div class="command-text">${escapeHtml(command.command_text)}</div>
+                            <div class="command-time">${formatDateTime(command.created_at)}</div>
+                        `;
+                        commandList.appendChild(card);
+                        
+                        // Fade in animation
+                        setTimeout(() => card.style.opacity = '1', 10);
+                        
+                        lastCommandId = command.id;
+                    });
+
+                    // Auto-scroll to bottom
+                    window.scrollTo({
+                        top: document.body.scrollHeight,
+                        behavior: 'smooth'
+                    });
+                }
+
+                // Update session title if changed
+                if (data.session_title) {
+                    document.getElementById('session-title').textContent = data.session_title;
+                }
+            } catch (error) {
+                console.error('Error polling commands:', error);
+            } finally {
+                isPolling = false;
+            }
+        }
+
+        // Poll every 1.5 seconds
+        setInterval(pollCommands, 1500);
+        
+        // Initial poll
+        setTimeout(pollCommands, 500);
+        
+        // Add CSS transition for smooth removal
+        const style = document.createElement('style');
+        style.textContent = '.command-card { transition: opacity 0.3s ease-out; }';
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>

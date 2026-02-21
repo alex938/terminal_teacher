@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Terminal Teacher</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <h1>🎓 Teacher Control Panel</h1>
+            <form action="{% url 'logout' %}" method="post" style="display: inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn logout-btn btn-small">Logout</button>
+            </form>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="admin-header">
+            <div class="session-info">
+                <strong>Current Session:</strong> {{ session.title }}
+                <br>
+                <small>Total Commands: {{ commands.count }}</small>
+            </div>
+            <div class="admin-actions">
+                <button onclick="deleteSelected()" class="btn btn-danger" id="delete-selected-btn" style="display:none;">
+                    Delete Selected (<span id="selected-count">0</span>)
+                </button>
+                <button onclick="clearSession()" class="btn btn-danger">Clear Session</button>
+                <button onclick="showNewSessionModal()" class="btn btn-success">New Session</button>
+                <a href="{% url 'student_view' %}" class="btn btn-primary" target="_blank">View Student Page</a>
+            </div>
+        </div>
+
+        <!-- Manual Add Form -->
+        <div class="manual-add-form">
+            <h3 style="margin-bottom: 1rem;">Manually Add Command</h3>
+            <form id="manual-add-form" onsubmit="addManualCommand(event)">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="manual-command">Command:</label>
+                    <input type="text" id="manual-command" name="command" class="form-control" 
+                           placeholder="e.g., git status" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Add Command</button>
+            </form>
+        </div>
+
+        <!-- Commands Table -->
+        <div class="admin-table-container">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th style="width: 40px;">
+                            <input type="checkbox" id="select-all" onchange="toggleSelectAll(this)">
+                        </th>
+                        <th>ID</th>
+                        <th>Command</th>
+                        <th>Time</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="commands-table-body">
+                    {% for command in commands %}
+                    <tr data-command-id="{{ command.id }}">
+                        <td>
+                            <input type="checkbox" class="command-checkbox" value="{{ command.id }}" 
+                                   onchange="updateSelectedCount()">
+                        </td>
+                        <td>{{ command.id }}</td>
+                        <td class="command-cell">{{ command.command_text|escape }}</td>
+                        <td class="time-cell">{{ command.created_at|date:"Y-m-d H:i:s" }}</td>
+                        <td>
+                            <button onclick="deleteCommand({{ command.id }})" 
+                                    class="btn btn-danger btn-small">Delete</button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="empty-state">No commands yet</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <script>
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+        function toggleSelectAll(checkbox) {
+            const checkboxes = document.querySelectorAll('.command-checkbox');
+            checkboxes.forEach(cb => cb.checked = checkbox.checked);
+            updateSelectedCount();
+        }
+
+        function updateSelectedCount() {
+            const selected = document.querySelectorAll('.command-checkbox:checked');
+            const count = selected.length;
+            const deleteBtn = document.getElementById('delete-selected-btn');
+            const countSpan = document.getElementById('selected-count');
+            
+            countSpan.textContent = count;
+            deleteBtn.style.display = count > 0 ? 'inline-block' : 'none';
+            
+            // Update select-all checkbox
+            const allCheckboxes = document.querySelectorAll('.command-checkbox');
+            const selectAll = document.getElementById('select-all');
+            selectAll.checked = count > 0 && count === allCheckboxes.length;
+        }
+
+        async function deleteSelected() {
+            const selected = document.querySelectorAll('.command-checkbox:checked');
+            if (selected.length === 0) return;
+            
+            if (!confirm(`Delete ${selected.length} selected command(s)?`)) return;
+
+            const promises = Array.from(selected).map(checkbox => {
+                const commandId = checkbox.value;
+                return fetch(`/api/commands/${commandId}/delete/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                    }
+                });
+            });
+
+            try {
+                await Promise.all(promises);
+                location.reload();
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error deleting some commands');
+            }
+        }
+
+        async function deleteCommand(commandId) {
+            if (!confirm('Delete this command?')) return;
+
+            try {
+                const response = await fetch(`/api/commands/${commandId}/delete/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                    }
+                });
+
+                if (response.ok) {
+                    const row = document.querySelector(`tr[data-command-id="${commandId}"]`);
+                    row.remove();
+                    alert('Command deleted successfully');
+                } else {
+                    alert('Failed to delete command');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error deleting command');
+            }
+        }
+
+        async function clearSession() {
+            if (!confirm('Clear ALL commands from this session? This cannot be undone!')) return;
+
+            try {
+                const response = await fetch('/api/session/clear/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                    }
+                });
+
+                if (response.ok) {
+                    location.reload();
+                } else {
+                    alert('Failed to clear session');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error clearing session');
+            }
+        }
+
+        function showNewSessionModal() {
+            const title = prompt('Enter new session title (or leave empty for auto-generated):');
+            if (title === null) return;
+
+            createNewSession(title);
+        }
+
+        async function createNewSession(title) {
+            try {
+                const formData = new FormData();
+                formData.append('title', title || '');
+
+                const response = await fetch('/api/session/new/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                    },
+                    body: formData
+                });
+
+                if (response.ok) {
+                    location.reload();
+                } else {
+                    alert('Failed to create new session');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error creating new session');
+            }
+        }
+
+        async function addManualCommand(event) {
+            event.preventDefault();
+            
+            const form = event.target;
+            const formData = new FormData(form);
+
+            try {
+                const response = await fetch('/api/commands/manual/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                    },
+                    body: formData
+                });
+
+                if (response.ok) {
+                    form.reset();
+                    location.reload();
+                } else {
+                    alert('Failed to add command');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error adding command');
+            }
+        }
+    </script>
+</body>
+</html>
+
+    <!-- Auto-refresh script -->
+    <script>
+        // Auto-refresh admin panel every 3 seconds
+        let autoRefreshEnabled = true;
+        let lastCommandCount = {{ commands.count }};
+        
+        async function checkForUpdates() {
+            if (!autoRefreshEnabled) return;
+            
+            try {
+                const response = await fetch('/api/commands/');
+                const data = await response.json();
+                const currentCount = data.commands.length;
+                
+                // Reload if command count changed
+                if (currentCount !== lastCommandCount) {
+                    location.reload();
+                }
+            } catch (error) {
+                console.error('Error checking for updates:', error);
+            }
+        }
+        
+        // Check every 3 seconds
+        setInterval(checkForUpdates, 3000);
+    </script>

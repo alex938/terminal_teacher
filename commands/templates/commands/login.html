@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Terminal Teacher</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-box">
+            <h2>🔐 Teacher Login</h2>
+            
+            {% if error %}
+            <div class="error-message">
+                {{ error }}
+            </div>
+            {% endif %}
+
+            <form method="post">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="password">Admin Password:</label>
+                    <input type="password" id="password" name="password" 
+                           class="form-control" required autofocus>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Login</button>
+            </form>
+
+            <div style="margin-top: 1.5rem; text-align: center;">
+                <a href="{% url 'student_view' %}" style="color: var(--text-secondary); text-decoration: none;">
+                    ← Back to Student View
+                </a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
