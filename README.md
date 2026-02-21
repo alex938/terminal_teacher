@@ -2,6 +2,21 @@
 
 Display your terminal commands in real-time to students via web browser.
 
+### Why:
+I created this small application to mirror only the commands I type into a live web interface. Since I teach a lot of Linux and networking, it helps me share commands with students in real time. They can quickly open the student panel and see each command as it’s entered, without me needing to scroll back through the terminal or repeat myself. This makes it much easier for students to keep up and follow along during lessons.
+
+### Quick Setup once container is running:
+![setup1](https://github.com/user-attachments/assets/e31af0ca-3ee1-4e13-80e6-87b9f156f9d0)
+
+### Commands to Teacher Terminal:
+![setup2](https://github.com/user-attachments/assets/3a43c278-a326-4f19-8334-cdebc8680c21)
+
+### Teacher Panel:
+![setup3](https://github.com/user-attachments/assets/442ba0df-1a8a-4f6e-8165-84a9b00294c0)
+
+### Student View:
+![setup4](https://github.com/user-attachments/assets/d51e43b1-4f64-4c33-984d-614ff84c673d)
+
 ## Quick Start
 
 ### 1. Start Server
