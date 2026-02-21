@@ -8,7 +8,7 @@ I created this small application to mirror only the commands I type into a live 
 ### Quick Setup once container is running:
 ![setup1](https://github.com/user-attachments/assets/e31af0ca-3ee1-4e13-80e6-87b9f156f9d0)
 
-### Commands to Teacher Terminal:
+### Commands sent to Terminal Teacher:
 ![setup2](https://github.com/user-attachments/assets/3a43c278-a326-4f19-8334-cdebc8680c21)
 
 ### Teacher Panel:
